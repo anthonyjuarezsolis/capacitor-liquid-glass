@@ -1,6 +1,6 @@
 {
   "name": "@ajuarezso/capacitor-liquid-glass",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "iOS 26 Liquid Glass native chrome (TabBar, NavigationBar, Alerts, Sheets) for Capacitor apps. Falls back gracefully on iOS < 26 and Android.",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",

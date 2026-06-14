@@ -3,6 +3,11 @@
 All notable changes to this project will be documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) • SemVer.
 
+## [0.4.1] — 2026-06
+
+### Fixed
+- **CocoaPods install failed** (`No podspec found for AjuarezsoCapacitorLiquidGlass`). The podspec was misnamed `CapacitorLiquidGlass.podspec` since the first release; Capacitor derives the pod name from the package (`@ajuarezso/capacitor-liquid-glass` → `AjuarezsoCapacitorLiquidGlass`), so `pod install` couldn't find it. Renamed the podspec + `s.name` to match. SPM was unaffected (resolves via `Package.swift`). Thanks [@drolpi](https://github.com/drolpi) ([#2](https://github.com/anthonyjuarezsolis/capacitor-liquid-glass/pull/2)).
+
 ## [0.4.0] — 2026-06
 
 ### Added
