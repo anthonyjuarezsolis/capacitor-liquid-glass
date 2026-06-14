@@ -10,7 +10,7 @@
     "dist/",
     "ios/Sources/",
     "Package.swift",
-    "CapacitorLiquidGlass.podspec"
+    "AjuarezsoCapacitorLiquidGlass.podspec"
   ],
   "author": "Anthony Juarez Solis <anthonyjuarezsolis@icloud.com>",
   "license": "MIT",
