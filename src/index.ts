@@ -27,7 +27,10 @@ const LiquidGlass: LiquidGlassPlugin = {
   // gates on getPlatform() === 'ios', this guards direct low-level callers).
   setTabBarBounds: (options) =>
     Capacitor.getPlatform() === 'ios' ? native.setTabBarBounds(options) : Promise.resolve(),
-  setSelectedTab: (options) => native.setSelectedTab(options),
+  setSelectedTab: (options) => {
+    if (options.index != null) binder.noteSelectedIndex(options.index);
+    return native.setSelectedTab(options);
+  },
   updateTabBadge: (options) => native.updateTabBadge(options),
   getTabBarLayout: () => native.getTabBarLayout(),
   showSearchBar: (options) => native.showSearchBar(options),
