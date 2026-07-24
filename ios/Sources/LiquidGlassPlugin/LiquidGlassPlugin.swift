@@ -1,6 +1,7 @@
 import Foundation
 import Capacitor
 import UIKit
+import WebKit
 
 @objc(LiquidGlassPlugin)
 public class LiquidGlassPlugin: CAPPlugin, CAPBridgedPlugin {
@@ -33,6 +34,10 @@ public class LiquidGlassPlugin: CAPPlugin, CAPBridgedPlugin {
         // HTML element instead of being pinned to the bottom (the JS layer
         // measures the element and injects this). Invalid/absent → bottom-pinned.
         let bounds = call.getObject("bounds").flatMap { Self.rect(from: $0) }
+        // Reparent mode (spike 2026-06-14): insertar el bar DENTRO del
+        // WKChildScrollView del slot → z-order del DOM real. Los binarios
+        // viejos ignoran esta clave (degradación elegante garantizada).
+        let reparent = call.getBool("reparent") ?? false
 
         let items = rawItems.compactMap { LiquidGlassTabItem(dictionary: $0) }
         guard !items.isEmpty else {
@@ -42,7 +47,7 @@ public class LiquidGlassPlugin: CAPPlugin, CAPBridgedPlugin {
 
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            self.presentTabBar(items: items, selectedIndex: selectedIndex, tintHex: tintHex, styleRaw: styleRaw, bounds: bounds)
+            self.presentTabBar(items: items, selectedIndex: selectedIndex, tintHex: tintHex, styleRaw: styleRaw, bounds: bounds, reparent: reparent)
             call.resolve()
         }
     }
@@ -181,7 +186,7 @@ public class LiquidGlassPlugin: CAPPlugin, CAPBridgedPlugin {
         searchOverlay?.show(on: window)
     }
 
-    private func presentTabBar(items: [LiquidGlassTabItem], selectedIndex: Int, tintHex: String?, styleRaw: String, bounds: CGRect?) {
+    private func presentTabBar(items: [LiquidGlassTabItem], selectedIndex: Int, tintHex: String?, styleRaw: String, bounds: CGRect?, reparent: Bool = false) {
         // CRÍTICO: usar `bridge?.viewController` (el VC que contiene el
         // WKWebView de Capacitor) en lugar del `rootViewController` del
         // window. iOS 26 aplica Liquid Glass automáticamente al UITabBar
@@ -204,9 +209,26 @@ public class LiquidGlassPlugin: CAPPlugin, CAPBridgedPlugin {
         }
 
         let style = LiquidGlassTabBarStyle(rawValue: styleRaw) ?? .default
-        // `bridge?.webView` is needed to convert the JS rect (viewport CSS px)
-        // into the host VC's coordinate space when binding to an HTML element.
-        tabBarOverlay?.attach(to: hostVC, bounds: bounds, webView: bridge?.webView)
+        // Reparent: buscar el WKChildScrollView del slot y montar adentro.
+        // Si el match falla (WebKit aún no materializó el scroll view, slot
+        // ausente), fallback transparente al overlay clásico.
+        var didReparent = false
+        if reparent, let bounds, bounds.width > 0, bounds.height > 0,
+           let webView = bridge?.webView as? WKWebView,
+           let sv = LiquidGlassReparent.findAndPrepareScrollView(
+               in: webView,
+               slotWidth: Int(round(bounds.width)),
+               slotHeight: Int(round(bounds.height))
+           ) {
+            tabBarOverlay?.attachReparented(into: sv, hostVC: hostVC)
+            didReparent = true
+        }
+        if !didReparent {
+            tabBarOverlay?.detachReparented()
+            // `bridge?.webView` is needed to convert the JS rect (viewport CSS px)
+            // into the host VC's coordinate space when binding to an HTML element.
+            tabBarOverlay?.attach(to: hostVC, bounds: bounds, webView: bridge?.webView)
+        }
         tabBarOverlay?.configure(items: items, selectedIndex: selectedIndex, tintHex: tintHex, style: style)
         tabBarOverlay?.show()
     }

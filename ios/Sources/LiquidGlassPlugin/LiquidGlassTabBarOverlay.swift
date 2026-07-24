@@ -83,6 +83,10 @@ final class LiquidGlassTabBarOverlay: UIViewController {
     /// `true` when the container tracks an HTML element rect; `false` when
     /// pinned to the bottom of the host (default).
     private var isBoundMode = false
+    /// `true` cuando el bar vive reparentado DENTRO del WKChildScrollView del
+    /// slot (z-order del DOM real). En este modo no hay constraints contra el
+    /// host: frame + autoresizing dentro del scroll view (patrón del spike).
+    private var isReparented = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -182,6 +186,56 @@ final class LiquidGlassTabBarOverlay: UIViewController {
             applyBottomPinned(hostVC: hostVC)
         }
         emitLayout()
+    }
+
+    /// Reparent mode (spike 2026-06-14): el view del overlay se inserta DENTRO
+    /// del WKChildScrollView del slot → el z-order del DOM tapa/destapa el bar
+    /// naturalmente (modales, drawers). Frame + autoresizing, sin constraints
+    /// contra el host (árboles distintos). El VC sigue siendo child del host
+    /// para conservar la jerarquía que iOS 26 espera para el adopt del glass.
+    func attachReparented(into scrollView: UIScrollView, hostVC: UIViewController?) {
+        guard let hostVC else { return }
+        // Salir de cualquier modo previo (overlay bottom-pinned o bound).
+        NSLayoutConstraint.deactivate(activeConstraints)
+        activeConstraints = []
+        boundTop = nil; boundLeading = nil; boundWidth = nil; boundHeight = nil
+        isBoundMode = false
+
+        if self.parent !== hostVC {
+            if self.parent != nil {
+                self.willMove(toParent: nil)
+                self.view.removeFromSuperview()
+                self.removeFromParent()
+            }
+            hostVC.addChild(self)
+        }
+        self.hostVC = hostVC
+
+        // Dentro del scroll view: frame lleno + autoresizing (patrón del lab).
+        view.removeFromSuperview()
+        view.translatesAutoresizingMaskIntoConstraints = true
+        view.frame = scrollView.bounds
+        view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.clipsToBounds = false
+        scrollView.addSubview(view)
+        if self.parent === hostVC { self.didMove(toParent: hostVC) }
+
+        isReparented = true
+        // Registrar para el hitTest del LiquidGlassWebView (taps).
+        if !LiquidGlassAnchorRegistry.shared.views.contains(where: { $0 === view }) {
+            LiquidGlassAnchorRegistry.shared.views.append(view)
+        }
+        emitLayout()
+    }
+
+    /// Sale del modo reparent (hide/teardown): desregistra del hitTest y
+    /// desmonta el view del scroll view. El próximo attach normal re-parenta.
+    func detachReparented() {
+        guard isReparented else { return }
+        isReparented = false
+        LiquidGlassAnchorRegistry.shared.views.removeAll { $0 === view }
+        view.removeFromSuperview()
+        view.translatesAutoresizingMaskIntoConstraints = false
     }
 
     /// Default: container pegado al bottom del host, ancho completo, altura

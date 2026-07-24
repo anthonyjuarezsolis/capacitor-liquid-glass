@@ -97,6 +97,14 @@ export class TabBarBinder {
       return;
     }
 
+    if (options.reparent) {
+      /* Reparent: el bar vive DENTRO del scroll view del slot — sigue su
+         geometría solo y el z-order del DOM lo tapa/destapa. Ni observers ni
+         oclusión ni setTabBarBounds: la plataforma hace todo. */
+      await this.native.showTabBar({ ...this.cachedOptions, bounds, reparent: true });
+      return;
+    }
+
     await this.native.showTabBar({ ...this.cachedOptions, bounds });
     if (gen !== this.generation) return; // superseded while the bridge call ran
 

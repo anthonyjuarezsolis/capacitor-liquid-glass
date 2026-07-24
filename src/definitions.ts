@@ -59,6 +59,15 @@ export interface ShowTabBarOptions {
    * whitelist (toasts). JS-layer only; stripped before the bridge.
    */
   occlusionWhitelist?: string[];
+
+  /**
+   * Reparent mode (requiere binario con soporte — spike 2026-06-14): el bar
+   * se inserta DENTRO del WKChildScrollView del slot y el z-order del DOM
+   * aplica de verdad (modales/drawers lo tapan naturalmente). El slot debe
+   * ser scrollable (overflow-y: scroll + hijo al 200%). Binarios viejos
+   * ignoran la clave → fallback transparente al modo overlay.
+   */
+  reparent?: boolean;
   /**
    * Low-level escape hatch: explicit bounds (CSS px, viewport-relative) for the
    * native bar. Normally you pass `containerElement` and the plugin computes
