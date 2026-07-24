@@ -22,15 +22,9 @@ public final class LiquidGlassAnchorRegistry {
 /// WKWebView normalmente entrega TODO touch a WebKit (WKContentView) — una
 /// subview nativa reparentada renderiza pero jamás recibe taps sin esto.
 ///
-/// La app la inyecta por la vía oficial de Capacitor:
-/// ```swift
-/// class MainViewController: CAPBridgeViewController {
-///   override open func webView(with frame: CGRect, configuration: WKWebViewConfiguration) -> WKWebView {
-///     LiquidGlassWebView(frame: frame, configuration: configuration)
-///   }
-/// }
-/// ```
-/// (+ el storyboard apuntando a `MainViewController`).
+/// El plugin isa-swizzlea el webview del bridge a esta clase al activar
+/// reparent (`object_setClass`, técnica KVO — sin stored properties, seguro).
+/// La app NO necesita inyectar nada.
 public final class LiquidGlassWebView: WKWebView {
     public override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         let original = super.hitTest(point, with: event)

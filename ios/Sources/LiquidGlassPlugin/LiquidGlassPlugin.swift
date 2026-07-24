@@ -214,6 +214,16 @@ public class LiquidGlassPlugin: CAPPlugin, CAPBridgedPlugin {
         // ausente), fallback transparente al overlay clásico.
         var didReparent = false
         if reparent, let bounds, bounds.width > 0, bounds.height > 0,
+           let webView = bridge?.webView as? WKWebView {
+            // isa-swizzle (técnica KVO): la subclase solo overridea hitTest,
+            // sin stored properties → seguro. Evita que la app tenga que
+            // inyectar su propio WKWebView (módulo no visible al target App
+            // con Xcode 26 explicit modules).
+            if !(webView is LiquidGlassWebView) {
+                object_setClass(webView, LiquidGlassWebView.self)
+            }
+        }
+        if reparent, let bounds, bounds.width > 0, bounds.height > 0,
            let webView = bridge?.webView as? WKWebView,
            let sv = LiquidGlassReparent.findAndPrepareScrollView(
                in: webView,
