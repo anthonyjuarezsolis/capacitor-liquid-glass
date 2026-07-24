@@ -53,6 +53,8 @@ export class TabBarBinder {
   private flapCandidate: 'hide' | 'show' | null = null;
   /** Overlays that legitimately float above the bar without hiding it. */
   private static readonly OCCLUSION_WHITELIST = ['.sui-toast-stack'];
+  /** Consumer-provided additions (occlusionWhitelist option). */
+  private extraWhitelist: string[] = [];
 
   /** Stable identity so `removeEventListener` actually detaches the listeners. */
   private readonly onReflow = (): void => this.scheduleSync();
@@ -78,6 +80,7 @@ export class TabBarBinder {
     }
 
     this.element = element;
+    this.extraWhitelist = options.occlusionWhitelist ?? [];
     this.cachedOptions = this.stripElement(options);
     const bounds = await this.measure(element, gen);
     if (gen !== this.generation) return; // superseded while measuring
@@ -116,9 +119,9 @@ export class TabBarBinder {
 
   /** Removes the (possibly non-serializable) element ref before crossing the bridge. */
   private stripElement(options: ShowTabBarOptions): ShowTabBarOptions {
-    if (options.containerElement == null) return options;
-    const { containerElement: _drop, ...rest } = options;
-    void _drop;
+    const { containerElement: _el, occlusionWhitelist: _wl, ...rest } = options;
+    void _el;
+    void _wl;
     return rest;
   }
 
@@ -285,7 +288,7 @@ export class TabBarBinder {
     const hit = document.elementFromPoint(cx, cy);
     if (!hit) return true;
     if (hit === element || element.contains(hit) || hit.contains(element)) return false;
-    for (const sel of TabBarBinder.OCCLUSION_WHITELIST) {
+    for (const sel of [...TabBarBinder.OCCLUSION_WHITELIST, ...this.extraWhitelist]) {
       if (hit.closest(sel)) return false;
     }
     return true;
@@ -316,6 +319,7 @@ export class TabBarBinder {
     this.autoHidden = false;
     this.flapCandidate = null;
     this.cachedOptions = null;
+    this.extraWhitelist = [];
     // `capture` must match the add-time flag for removal to take effect.
     window.removeEventListener('scroll', this.onReflow, { capture: true });
     window.removeEventListener('resize', this.onReflow);

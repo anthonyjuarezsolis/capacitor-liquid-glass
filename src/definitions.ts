@@ -51,6 +51,14 @@ export interface ShowTabBarOptions {
    *    never crosses the native bridge.
    */
   containerElement?: string | HTMLElement;
+
+  /**
+   * CSS selectors of overlays allowed to cover the anchor WITHOUT auto-hiding
+   * the bar. They will render visually BENEATH the native bar — a native
+   * overlay always paints above the WebView. Merged with the built-in
+   * whitelist (toasts). JS-layer only; stripped before the bridge.
+   */
+  occlusionWhitelist?: string[];
   /**
    * Low-level escape hatch: explicit bounds (CSS px, viewport-relative) for the
    * native bar. Normally you pass `containerElement` and the plugin computes
