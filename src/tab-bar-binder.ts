@@ -231,9 +231,10 @@ export class TabBarBinder {
           return;
         }
         this.flapCandidate = null;
+        const opts = this.cachedOptions;
+        if (!opts) return; // sin config cacheada no hay qué re-mostrar
         this.autoHidden = false;
         this.lastSent = bounds;
-        const opts = this.cachedOptions ?? {};
         void this.native.showTabBar({ ...opts, bounds });
         return;
       }
