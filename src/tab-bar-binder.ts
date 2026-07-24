@@ -262,7 +262,22 @@ export class TabBarBinder {
   /** Something covers the anchor's center (modal, drawer, backdrop) → treat as
       hidden, mirroring the z-index occlusion an HTML bar gets natively. Toasts
       and other whitelisted overlays float above the bar without hiding it. */
+  private warnedUntestable = false;
+
   private isOccluded(element: HTMLElement, bounds: TabBarBounds): boolean {
+    /* Anchors with pointer-events:none are invisible to elementFromPoint — the
+       hit would be whatever sits BEHIND them, a guaranteed false positive that
+       auto-hides the bar forever. Contract: keep the anchor hit-testable. If a
+       consumer breaks it, degrade to geometry-only tracking (no occlusion). */
+    if (getComputedStyle(element).pointerEvents === 'none') {
+      if (!this.warnedUntestable) {
+        this.warnedUntestable = true;
+        console.warn(
+          '[LiquidGlass] anchor has pointer-events:none — occlusion detection disabled. Keep the anchor hit-testable.',
+        );
+      }
+      return false;
+    }
     const cx = bounds.x + bounds.width / 2;
     const cy = bounds.y + bounds.height / 2;
     if (cx < 0 || cy < 0 || cx > window.innerWidth || cy > window.innerHeight) return true;
