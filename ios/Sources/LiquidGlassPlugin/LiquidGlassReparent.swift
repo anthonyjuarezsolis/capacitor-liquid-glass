@@ -50,9 +50,13 @@ enum LiquidGlassReparent {
         var target: UIScrollView?
         for sub in allSubviews(of: webView) {
             guard let sv = sub as? UIScrollView, sv !== webView.scrollView else { continue }
-            let cs = sv.contentSize
-            if Int(round(cs.width)) == slotWidth,
-               Int(round(cs.height / 2)) == slotHeight || Int(round(cs.height)) == slotHeight {
+            // Match por BOUNDS del scroll view (== rect del slot) + contenido
+            // scrolleable. El contentSize exacto depende de cómo resuelva el
+            // filler (bug real 2026-07-24: 200% en flex dio 125 y no 166) —
+            // los bounds del WKChildScrollView siempre son el rect del slot.
+            if Int(round(sv.bounds.width)) == slotWidth,
+               Int(round(sv.bounds.height)) == slotHeight,
+               sv.contentSize.height > sv.bounds.height + 1 {
                 target = sv
                 break
             }
@@ -71,6 +75,18 @@ enum LiquidGlassReparent {
             ancestor = a.superview
         }
         return sv
+    }
+
+    /// Diagnóstico: contentSize de todos los WKChildScrollView presentes.
+    static func scrollViewInventory(in webView: WKWebView) -> [String] {
+        var out: [String] = []
+        for sub in allSubviews(of: webView) {
+            guard let sv = sub as? UIScrollView, sv !== webView.scrollView else { continue }
+            let cs = sv.contentSize
+            let b = sv.bounds.size
+            out.append("cs=\(Int(cs.width))x\(Int(cs.height)) b=\(Int(b.width))x\(Int(b.height))")
+        }
+        return out
     }
 
     private static func allSubviews(of view: UIView) -> [UIView] {

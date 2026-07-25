@@ -224,14 +224,24 @@ public class LiquidGlassPlugin: CAPPlugin, CAPBridgedPlugin {
             }
         }
         if reparent, let bounds, bounds.width > 0, bounds.height > 0,
-           let webView = bridge?.webView as? WKWebView,
-           let sv = LiquidGlassReparent.findAndPrepareScrollView(
-               in: webView,
-               slotWidth: Int(round(bounds.width)),
-               slotHeight: Int(round(bounds.height))
-           ) {
-            tabBarOverlay?.attachReparented(into: sv, hostVC: hostVC)
-            didReparent = true
+           let webView = bridge?.webView as? WKWebView {
+            notifyListeners("tabBarDiag", data: ["msg": "reparent solicitado bounds=\(Int(bounds.width))x\(Int(bounds.height))"])
+            if let sv = LiquidGlassReparent.findAndPrepareScrollView(
+                in: webView,
+                slotWidth: Int(round(bounds.width)),
+                slotHeight: Int(round(bounds.height))
+            ) {
+                tabBarOverlay?.attachReparented(into: sv, hostVC: hostVC)
+                didReparent = true
+                CAPLog.print("⚡️ LiquidGlass: reparent OK (intento 0)")
+                notifyListeners("tabBarDiag", data: ["msg": "reparent OK (intento 0)"])
+            } else {
+                // WebKit materializa el WKChildScrollView async — reintentar
+                // con backoff mientras el bar corre en overlay clásico; al
+                // encontrarlo se migra en caliente.
+                CAPLog.print("⚡️ LiquidGlass: reparent sin match aún — reintentando")
+                scheduleReparentRetry(bounds: bounds, hostVC: hostVC, attempt: 1)
+            }
         }
         if !didReparent {
             tabBarOverlay?.detachReparented()
@@ -241,6 +251,34 @@ public class LiquidGlassPlugin: CAPPlugin, CAPBridgedPlugin {
         }
         tabBarOverlay?.configure(items: items, selectedIndex: selectedIndex, tintHex: tintHex, style: style)
         tabBarOverlay?.show()
+    }
+
+    private func scheduleReparentRetry(bounds: CGRect, hostVC: UIViewController, attempt: Int) {
+        guard attempt <= 6 else {
+            CAPLog.print("⚡️ LiquidGlass: reparent agotó reintentos — queda overlay clásico")
+            var inventory: [String] = []
+            if let webView = bridge?.webView as? WKWebView {
+                inventory = LiquidGlassReparent.scrollViewInventory(in: webView)
+            }
+            notifyListeners("tabBarDiag", data: ["msg": "reparent AGOTADO. ScrollViews: \(inventory.joined(separator: " | "))"])
+            return
+        }
+        let delay = 0.15 * pow(2.0, Double(attempt - 1)) // 0.15s … 4.8s
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, let overlay = self.tabBarOverlay, !overlay.isReparented,
+                  let webView = self.bridge?.webView as? WKWebView else { return }
+            if let sv = LiquidGlassReparent.findAndPrepareScrollView(
+                in: webView,
+                slotWidth: Int(round(bounds.width)),
+                slotHeight: Int(round(bounds.height))
+            ) {
+                overlay.attachReparented(into: sv, hostVC: hostVC)
+                CAPLog.print("⚡️ LiquidGlass: reparent OK (intento \(attempt))")
+                self.notifyListeners("tabBarDiag", data: ["msg": "reparent OK (intento \(attempt))"])
+            } else {
+                self.scheduleReparentRetry(bounds: bounds, hostVC: hostVC, attempt: attempt + 1)
+            }
+        }
     }
 }
 

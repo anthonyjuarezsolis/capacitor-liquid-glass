@@ -86,7 +86,7 @@ final class LiquidGlassTabBarOverlay: UIViewController {
     /// `true` cuando el bar vive reparentado DENTRO del WKChildScrollView del
     /// slot (z-order del DOM real). En este modo no hay constraints contra el
     /// host: frame + autoresizing dentro del scroll view (patrón del spike).
-    private var isReparented = false
+    private(set) var isReparented = false
 
     override func viewDidLoad() {
         super.viewDidLoad()

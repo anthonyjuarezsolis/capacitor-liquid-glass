@@ -98,6 +98,7 @@ export class TabBarBinder {
     }
 
     if (options.reparent) {
+      console.log('[liquid-glass] binder: enviando showTabBar reparent', bounds);
       /* Reparent: el bar vive DENTRO del scroll view del slot — sigue su
          geometría solo y el z-order del DOM lo tapa/destapa. Ni observers ni
          oclusión ni setTabBarBounds: la plataforma hace todo. */
