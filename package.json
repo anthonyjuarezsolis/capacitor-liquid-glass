@@ -54,8 +54,5 @@
     "ios": {
       "src": "ios"
     }
-  },
-  "dependencies": {
-    "@ajuarezso/capacitor-liquid-glass": "0.7.2"
   }
 }
