@@ -44,22 +44,30 @@ enum LiquidGlassReparent {
     /// scroll apagado, sin cancelación de touches y sin clipping en toda la
     /// cadena hasta el WebView (el glass del estado pressed desborda el rect).
     static func findAndPrepareScrollView(in webView: WKWebView, slotWidth: Int, slotHeight: Int) -> UIScrollView? {
+        findAndPrepareScrollView(in: webView, slotWidth: slotWidth, slotHeight: slotHeight, slotX: nil, slotY: nil)
+    }
+
+    static func findAndPrepareScrollView(in webView: WKWebView, slotWidth: Int, slotHeight: Int, slotX: Int?, slotY: Int?) -> UIScrollView? {
         webView.scrollView.delaysContentTouches = false
         webView.scrollView.canCancelContentTouches = false
 
         var target: UIScrollView?
         for sub in allSubviews(of: webView) {
             guard let sv = sub as? UIScrollView, sv !== webView.scrollView else { continue }
-            // Match por BOUNDS del scroll view (== rect del slot) + contenido
-            // scrolleable. El contentSize exacto depende de cómo resuelva el
-            // filler (bug real 2026-07-24: 200% en flex dio 125 y no 166) —
-            // los bounds del WKChildScrollView siempre son el rect del slot.
-            if Int(round(sv.bounds.width)) == slotWidth,
-               Int(round(sv.bounds.height)) == slotHeight,
-               sv.contentSize.height > sv.bounds.height + 1 {
-                target = sv
-                break
+            // Match por BOUNDS + POSICIÓN en pantalla. WebKit crea el
+            // WKChildScrollView por el overflow:scroll del slot aunque el
+            // contenido NO scrollee (el filler nunca aportó al contentSize —
+            // diag 2026-07-24) — así que nada de exigir scrollabilidad; la
+            // unicidad la da el rect completo (tamaño + origen viewport).
+            guard Int(round(sv.bounds.width)) == slotWidth,
+                  Int(round(sv.bounds.height)) == slotHeight else { continue }
+            if let sx = slotX, let sy = slotY {
+                let origin = sv.convert(CGPoint.zero, to: webView)
+                guard abs(Int(round(origin.x)) - sx) <= 3,
+                      abs(Int(round(origin.y)) - sy) <= 3 else { continue }
             }
+            target = sv
+            break
         }
         guard let sv = target else { return nil }
 

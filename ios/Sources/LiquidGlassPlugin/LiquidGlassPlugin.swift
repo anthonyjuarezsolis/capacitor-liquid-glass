@@ -229,7 +229,9 @@ public class LiquidGlassPlugin: CAPPlugin, CAPBridgedPlugin {
             if let sv = LiquidGlassReparent.findAndPrepareScrollView(
                 in: webView,
                 slotWidth: Int(round(bounds.width)),
-                slotHeight: Int(round(bounds.height))
+                slotHeight: Int(round(bounds.height)),
+                slotX: Int(round(bounds.origin.x)),
+                slotY: Int(round(bounds.origin.y))
             ) {
                 tabBarOverlay?.attachReparented(into: sv, hostVC: hostVC)
                 didReparent = true
@@ -270,7 +272,9 @@ public class LiquidGlassPlugin: CAPPlugin, CAPBridgedPlugin {
             if let sv = LiquidGlassReparent.findAndPrepareScrollView(
                 in: webView,
                 slotWidth: Int(round(bounds.width)),
-                slotHeight: Int(round(bounds.height))
+                slotHeight: Int(round(bounds.height)),
+                slotX: Int(round(bounds.origin.x)),
+                slotY: Int(round(bounds.origin.y))
             ) {
                 overlay.attachReparented(into: sv, hostVC: hostVC)
                 CAPLog.print("⚡️ LiquidGlass: reparent OK (intento \(attempt))")
