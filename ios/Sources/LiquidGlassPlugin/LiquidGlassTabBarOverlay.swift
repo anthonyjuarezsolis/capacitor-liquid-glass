@@ -176,6 +176,16 @@ final class LiquidGlassTabBarOverlay: UIViewController {
         }
         self.hostVC = hostVC
 
+        // Idempotencia post-reparent: si venimos de detachReparented() el view
+        // quedó FUERA de la jerarquía con el parent VC intacto — sin este
+        // re-add, activar constraints abajo crashea con "no common ancestor"
+        // (crash real 2026-07-24 al cambiar de rol).
+        if view.superview !== hostVC.view {
+            view.removeFromSuperview()
+            view.translatesAutoresizingMaskIntoConstraints = false
+            hostVC.view.addSubview(view)
+        }
+
         // `width > 0 && height > 0` es obligatorio: un container medido en 0×0 en
         // el primer layout pass es la única forma realista de PERDER el adopt de
         // Liquid Glass. Si el rect llega vacío caemos a bottom-pinned y el
