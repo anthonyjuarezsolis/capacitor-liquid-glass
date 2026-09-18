@@ -8,6 +8,7 @@ import type {
   ShowTabBarOptions,
   TabBarLayoutEvent,
   UpdateTabBadgeOptions,
+  SetWebViewBackgroundOptions,
 } from './definitions';
 
 /**
@@ -50,6 +51,10 @@ export class LiquidGlassWeb extends WebPlugin implements LiquidGlassPlugin {
   }
 
   async clearSearchText(): Promise<void> {
+    // no-op on web
+  }
+
+  async setWebViewBackground(_options: SetWebViewBackgroundOptions): Promise<void> {
     // no-op on web
   }
 }

@@ -368,11 +368,14 @@ final class LiquidGlassTabBarOverlay: UIViewController {
         applyAppearance(tabBar, style: style)
 
         let uiItems: [UITabBarItem] = items.enumerated().map { index, item in
+            // El activo se rellena (`house` → `house.fill`), como Slack. Si el
+            // símbolo no tiene variante rellena, queda el de línea.
             let tab = UITabBarItem(
                 title: item.label,
                 image: UIImage(systemName: item.sfSymbol),
-                tag: index
+                selectedImage: UIImage(systemName: item.sfSymbol + ".fill") ?? UIImage(systemName: item.sfSymbol)
             )
+            tab.tag = index
             if let badge = item.badge, !badge.isEmpty {
                 tab.badgeValue = badge
             }

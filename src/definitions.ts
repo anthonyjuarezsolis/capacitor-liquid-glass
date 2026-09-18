@@ -149,6 +149,11 @@ export interface SearchSubmittedEvent {
   text: string;
 }
 
+export interface SetWebViewBackgroundOptions {
+  /** Hex "#RRGGBB". */
+  color: string;
+}
+
 export interface LiquidGlassPlugin {
   /** Creates (or updates) and shows the native Liquid Glass tab bar. */
   showTabBar(options: ShowTabBarOptions): Promise<void>;
@@ -193,6 +198,12 @@ export interface LiquidGlassPlugin {
 
   /** Clears the text in the search field without dismissing the overlay. */
   clearSearchText(): Promise<void>;
+
+  /**
+   * Sets the WKWebView background (the color that shows between a reload and
+   * the new document's first paint). Hex "#RRGGBB". iOS only; no-op elsewhere.
+   */
+  setWebViewBackground(options: SetWebViewBackgroundOptions): Promise<void>;
 
   /** Emitted on every keystroke while the user types in the search field. */
   addListener(

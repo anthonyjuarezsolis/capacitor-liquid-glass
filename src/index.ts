@@ -36,6 +36,8 @@ const LiquidGlass: LiquidGlassPlugin = {
   showSearchBar: (options) => native.showSearchBar(options),
   hideSearchBar: () => native.hideSearchBar(),
   clearSearchText: () => native.clearSearchText(),
+  setWebViewBackground: (options) =>
+    Capacitor.getPlatform() === 'ios' ? native.setWebViewBackground(options) : Promise.resolve(),
   // Preserve the overloaded signature for consumers (the bind keeps `this`).
   addListener: native.addListener.bind(native) as LiquidGlassPlugin['addListener'],
   removeAllListeners: () => native.removeAllListeners(),

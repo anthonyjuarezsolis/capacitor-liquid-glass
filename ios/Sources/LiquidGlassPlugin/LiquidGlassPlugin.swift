@@ -17,6 +17,7 @@ public class LiquidGlassPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "showSearchBar", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "hideSearchBar", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "clearSearchText", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setWebViewBackground", returnType: CAPPluginReturnPromise),
     ]
 
     private var tabBarOverlay: LiquidGlassTabBarOverlay?
@@ -150,6 +151,25 @@ public class LiquidGlassPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func hideSearchBar(_ call: CAPPluginCall) {
         DispatchQueue.main.async { [weak self] in
             self?.searchOverlay?.hide()
+            call.resolve()
+        }
+    }
+
+    /// El color que asoma detrás del documento: entre un `reload` y el primer
+    /// paint del bundle nuevo el WKWebView pinta su propio `backgroundColor`
+    /// (blanco por defecto — 3 frames medidos al aplicar una actualización en
+    /// modo oscuro). La app lo llama cada vez que cambia de tema.
+    @objc func setWebViewBackground(_ call: CAPPluginCall) {
+        guard let hex = call.getString("color"), let color = UIColor(webViewHex: hex) else {
+            call.reject("color (#RRGGBB) is required")
+            return
+        }
+        DispatchQueue.main.async { [weak self] in
+            guard let webView = self?.bridge?.webView else { call.resolve(); return }
+            webView.isOpaque = false
+            webView.backgroundColor = color
+            webView.scrollView.backgroundColor = color
+            self?.bridge?.viewController?.view.backgroundColor = color
             call.resolve()
         }
     }
@@ -312,5 +332,19 @@ private extension UIApplication {
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }
             .first
+    }
+}
+
+private extension UIColor {
+    convenience init?(webViewHex hex: String) {
+        var value = hex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if value.hasPrefix("#") { value.removeFirst() }
+        guard value.count == 6, let rgb = UInt32(value, radix: 16) else { return nil }
+        self.init(
+            red: CGFloat((rgb >> 16) & 0xFF) / 255,
+            green: CGFloat((rgb >> 8) & 0xFF) / 255,
+            blue: CGFloat(rgb & 0xFF) / 255,
+            alpha: 1
+        )
     }
 }
